@@ -123,10 +123,8 @@ int main() {
   C_seq = new int *[N];
   C_para = new int *[N];
   for (i = 0; i < N; i++) {
-    C_seq[i] = new int[N];
-    C_para[i] = new int[N];
-    memset(C_seq[i], 1, N * sizeof(int));
-    memset(C_para[i], 1, N * sizeof(int));
+    C_seq[i] = new int[N]();
+    C_para[i] = new int[N]();
   }
   
   clkbegin = rtclock();
