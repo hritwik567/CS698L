@@ -17,8 +17,8 @@ const char *f = "hritvikhritvikhritvikhri";
 
 //buffer and metadata
 char buffer[BuffSize] = {0};
-int start = 0;
-int end = 0;
+int b_start = 0;
+int b_end = 0;
 int bytes_read = 0;
 int bytes_written = 0;
 
@@ -31,45 +31,46 @@ pthread_mutex_t lock_p = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t lock_c = PTHREAD_MUTEX_INITIALIZER; 
 
 
-struct thr_args {
-  int **A;
-  int **B;
-  int **C;
-  int start;
-  int offset;
-};
-
 void *producer(void *arguments) {
   while(bytes_read != filesize) {
     pthread_mutex_lock(&lock_p);
-    while((start - end) % BuffSize == BuffSize - 1)
+    while((b_end - b_start + BuffSize) % BuffSize == BuffSize - 1) {
+      pthread_cond_signal(&cond_c);
       pthread_cond_wait(&cond_p, &lock_p);
+    }
     
-    buffer[end] = f[bytes_read];
+    buffer[b_end] = f[bytes_read];
     bytes_read++;
-    end = (end + 1) % BuffSize;
+    b_end = (b_end + 1) % BuffSize;
     
     pthread_mutex_unlock(&lock_p);
+    pthread_cond_signal(&cond_c);
   }
+  cout << "Producer Exiting" << endl;
   pthread_exit(NULL);
 }
 
 void *consumer(void *arguments) {
   int i;
   while(bytes_written != filesize) {
+    cout << "CWait" << bytes_written << endl;
     pthread_mutex_lock(&lock_c);
-    while((start - end) % BuffSize >= WriteStride)
+    while((b_end - b_start + BuffSize) % BuffSize < WriteStride) {
+      pthread_cond_signal(&cond_p);
       pthread_cond_wait(&cond_c, &lock_c);
+    }
   
     i = WriteStride;
     while(i--) {
-      cout << buffer[start];
-      start = (start + 1) % BuffSize;
+      cerr << buffer[b_start] << endl;
+      b_start = (b_start + 1) % BuffSize;
     }
     
     bytes_written += WriteStride;
     pthread_mutex_unlock(&lock_c);
+    pthread_cond_signal(&cond_p);
   }
+  cout << "Consumer Exiting" << endl;
   pthread_exit(NULL);
 }
 
