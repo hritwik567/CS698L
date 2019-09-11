@@ -8,13 +8,15 @@ using namespace std;
 
 //constants
 const char *filename = "input.txt";
+const int BuffSize = 8;
+const int WriteStride = 4;
 const int Pthreads = 1;
 const int Cthreads = 2;
 int filesize = 24; 
 const char *f = "hritvikhritvikhritvikhri";
 
 //buffer and metadata
-char buffer[8] = {0};
+char buffer[BuffSize] = {0};
 int start = 0;
 int end = 0;
 int bytes_read = 0;
@@ -40,7 +42,12 @@ struct thr_args {
 void *producer(void *arguments) {
   while(bytes_read != filesize) {
     pthread_mutex_lock(&lock_p);
-    pthread_cond_wait(&cond_p, &lock_p);
+    while((start - end) % BuffSize == BuffSize - 1)
+      pthread_cond_wait(&cond_p, &lock_p);
+    
+    buffer[end] = f[bytes_read];
+    bytes_read++;
+    end = (end + 1) % BuffSize;
     
     pthread_mutex_unlock(&lock_p);
   }
@@ -48,10 +55,19 @@ void *producer(void *arguments) {
 }
 
 void *consumer(void *arguments) {
+  int i;
   while(bytes_written != filesize) {
     pthread_mutex_lock(&lock_c);
-    pthread_cond_wait(&cond_c, &lock_c);
+    while((start - end) % BuffSize >= WriteStride)
+      pthread_cond_wait(&cond_c, &lock_c);
   
+    i = WriteStride;
+    while(i--) {
+      cout << buffer[start];
+      start = (start + 1) % BuffSize;
+    }
+    
+    bytes_written += WriteStride;
     pthread_mutex_unlock(&lock_c);
   }
   pthread_exit(NULL);
