@@ -57,6 +57,7 @@ void *producer(void *arguments) {
 
 void *consumer(void *arguments) {
   int i;
+  char out[4];
   while(bytes_written != filesize) {
     pthread_mutex_lock(&lock_c);
     while(bytes_written < filesize && (b_end - b_start + BuffSize) % BuffSize < WriteStride) {
@@ -70,14 +71,16 @@ void *consumer(void *arguments) {
     }
   
     i = WriteStride;
+    
     while(i--) {
-      cerr << buffer[b_start] << endl;
+      out[WriteStride - i - 1] = buffer[b_start];
       b_start = (b_start + 1) % BuffSize;
     }
     
     bytes_written += WriteStride;
     pthread_mutex_unlock(&lock_c);
     pthread_cond_signal(&cond_p);
+    cerr << out;
   }
   cout << "Consumer Exiting" << endl;
   pthread_cond_signal(&cond_c);
