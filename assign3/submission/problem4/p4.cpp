@@ -34,9 +34,14 @@ pthread_mutex_t lock_c = PTHREAD_MUTEX_INITIALIZER;
 void *producer(void *arguments) {
   while(bytes_read != filesize) {
     pthread_mutex_lock(&lock_p);
-    while((b_end - b_start + BuffSize) % BuffSize == BuffSize - 1) {
+    while(bytes_read < filesize && (b_end - b_start + BuffSize) % BuffSize == BuffSize - 1) {
       pthread_cond_signal(&cond_c);
       pthread_cond_wait(&cond_p, &lock_p);
+    }
+    
+    if(bytes_read == filesize) {
+      pthread_mutex_unlock(&lock_p);
+      break;
     }
     
     buffer[b_end] = f[bytes_read];
@@ -53,11 +58,15 @@ void *producer(void *arguments) {
 void *consumer(void *arguments) {
   int i;
   while(bytes_written != filesize) {
-    cout << "CWait" << bytes_written << endl;
     pthread_mutex_lock(&lock_c);
-    while((b_end - b_start + BuffSize) % BuffSize < WriteStride) {
+    while(bytes_written < filesize && (b_end - b_start + BuffSize) % BuffSize < WriteStride) {
       pthread_cond_signal(&cond_p);
       pthread_cond_wait(&cond_c, &lock_c);
+    }
+    
+    if(bytes_written == filesize) {
+      pthread_mutex_unlock(&lock_c);
+      break;
     }
   
     i = WriteStride;
@@ -71,6 +80,7 @@ void *consumer(void *arguments) {
     pthread_cond_signal(&cond_p);
   }
   cout << "Consumer Exiting" << endl;
+  pthread_cond_signal(&cond_c);
   pthread_exit(NULL);
 }
 
