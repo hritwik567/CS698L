@@ -57,11 +57,13 @@ void check_result(double* w_ref, double* w_opt) {
 
 // INITIALLY IDENTICAL TO REFERENCE; MAKE YOUR CHANGES TO OPTIMIZE THIS CODE
 void optimized(double **A, double *x, double *y_opt, double *z_opt) {
-  int i, j;
-  for (i = 0; i < N; i++) {
+  int i, j, ii, jj;
+  for (i = 0; i < N; i += 2) {
     for (j = 0; j < N; j++) {
-      y_opt[j] = y_opt[j] + A[i][j] * x[i];
-      z_opt[j] = z_opt[j] + A[i][j] * x[j];
+    y_opt[j] = y_opt[j] + A[i][j] * x[i];
+    y_opt[j] = y_opt[j] + A[i+1][j] * x[i+1];
+    z_opt[j] = z_opt[j] + A[i][j] * x[j];
+    z_opt[j] = z_opt[j] + A[i+1][j] * x[j];
     }
   }
 }
@@ -116,6 +118,5 @@ int main() {
     cout << y_opt[N / 2] << "\n";
   cout << "Optimized Version: Matrix Size = " << N << ", "
        << 4.0 * 1e-9 * N * N * Niter / t << " GFLOPS; Time = " << t << " sec\n";
-
   check_result(y_ref, y_opt);
 }
