@@ -61,7 +61,7 @@ void check_result(double **w_ref, double **w_opt) {
 // THIS IS INITIALLY IDENTICAL TO REFERENCE
 // MAKE YOUR CHANGES TO OPTIMIZE THIS FUNCTION
 void optimized(double **A, double **B, double **C) {
-  int i, j, k, ii, s = 6;
+  int i, j, k, ii, s = 4;
   double r[s];
   for (i = 0; i < N; i += s) {
     for (j = 0; j < N; j++) {
