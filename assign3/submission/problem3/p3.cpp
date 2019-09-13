@@ -6,9 +6,9 @@
 
 using namespace std;
 
-const int N = 1024;
-const int Nthreads = 8;
-const int Niter = 12;
+int N = 1024;
+int Nthreads = 8;
+const int Niter = 5;
 
 struct thr_args {
   int **A;
@@ -56,7 +56,7 @@ void *parallel_s1(void *arguments) {
 }
 
 void parallel(int **A, int **B, int **C) {
-  pthread_t threads[Nthreads];
+  pthread_t *threads = new pthread_t[Nthreads];
   int i, err;
   struct thr_args args[Nthreads] = {0};
   for(i = 0; i < Nthreads; i++) {
@@ -99,7 +99,15 @@ void check_result(int **C_seq, int **C_para) {
   }
 }
 
-int main() {
+int main(int argc, char **argv) {
+  if(argc != 1 && argc != 3) {
+    cout << "Usage ./binary <MatrixSize> <NumberThreads>" << endl;
+    exit(-1);
+  } else if(argc == 3) {
+    N = stoi(argv[1]);
+    Nthreads = stoi(argv[2]);
+  }
+  
   double clkbegin, clkend;
   double t_seq, t_para;
 
