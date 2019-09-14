@@ -8,7 +8,7 @@ using namespace std;
 
 int N = 1024;
 int Nthreads = 8;
-const int Niter = 5;
+const int Niter = 1;
 
 struct thr_args {
   int **A;

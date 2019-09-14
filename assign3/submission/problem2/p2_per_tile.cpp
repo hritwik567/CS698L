@@ -61,14 +61,14 @@ void check_result(double **w_ref, double **w_opt) {
 // THIS IS INITIALLY IDENTICAL TO REFERENCE
 // MAKE YOUR CHANGES TO OPTIMIZE THIS FUNCTION
 void optimized(double **A, double **B, double **C) {
-  int i, j, k, s = 8, ii, jj, kk;
+  int i, j, k, s = 8, ii, jj;
   double r;
   for (i = 0; i < N; i += s) {
     for (j = 0; j < N; j += s) {
       for(ii = i; ii < min(i + s, N); ii++) {
         for(jj = j; jj < min(j + s, N); jj++) {
           r = B[ii][jj];
-          for(k = jj; k < N; k += s) {
+          for(k = jj; k < N; k++) {
               C[k][ii] += A[jj][k] * r;
           }
         }

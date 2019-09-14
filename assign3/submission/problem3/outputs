@@ -1,0 +1,89 @@
+==> out_1024_16 <==
+Matrix Size = 1024
+Number of Threads = 16
+Number of iterations = 1
+Sequential Time = 1.06158sec
+Parallel Time = 0.55554sec
+Speedup = 1.91090
+No differences found between sequential and parallel versions
+
+==> out_1024_8 <==
+Matrix Size = 1024
+Number of Threads = 8
+Number of iterations = 1
+Sequential Time = 1.04409sec
+Parallel Time = 0.31345sec
+Speedup = 3.33093
+No differences found between sequential and parallel versions
+
+==> out_2048_16 <==
+Matrix Size = 2048
+Number of Threads = 16
+Number of iterations = 1
+Sequential Time = 29.50797sec
+Parallel Time = 5.33531sec
+Speedup = 5.53070
+No differences found between sequential and parallel versions
+
+==> out_256_1 <==
+Matrix Size = 256
+Number of Threads = 1
+Number of iterations = 1
+Sequential Time = 0.03424sec
+Parallel Time = 0.01410sec
+Speedup = 2.42819
+No differences found between sequential and parallel versions
+
+==> out_4096_16 <==
+Matrix Size = 4096
+Number of Threads = 16
+Number of iterations = 1
+Sequential Time = 271.40583sec
+Parallel Time = 47.96774sec
+Speedup = 5.65809
+No differences found between sequential and parallel versions
+
+==> out_4096_2 <==
+Matrix Size = 4096
+Number of Threads = 2
+Number of iterations = 1
+Sequential Time = 282.16197sec
+Parallel Time = 141.54217sec
+Speedup = 1.99348
+No differences found between sequential and parallel versions
+
+==> out_4096_4 <==
+Matrix Size = 4096
+Number of Threads = 4
+Number of iterations = 1
+Sequential Time = 294.69666sec
+Parallel Time = 71.83147sec
+Speedup = 4.10261
+No differences found between sequential and parallel versions
+
+==> out_4096_8 <==
+Matrix Size = 4096
+Number of Threads = 8
+Number of iterations = 1
+Sequential Time = 315.59434sec
+Parallel Time = 57.35494sec
+Speedup = 5.50248
+No differences found between sequential and parallel versions
+
+==> out_512_2 <==
+Matrix Size = 512
+Number of Threads = 2
+Number of iterations = 1
+Sequential Time = 0.15113sec
+Parallel Time = 0.06019sec
+Speedup = 2.51076
+No differences found between sequential and parallel versions
+
+==> out_512_4 <==
+Matrix Size = 512
+Number of Threads = 4
+Number of iterations = 1
+Sequential Time = 0.11802sec
+Parallel Time = 0.03168sec
+Speedup = 3.72506
+No differences found between sequential and parallel versions

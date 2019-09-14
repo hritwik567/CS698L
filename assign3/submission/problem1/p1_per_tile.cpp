@@ -57,11 +57,11 @@ void check_result(double* w_ref, double* w_opt) {
 
 // INITIALLY IDENTICAL TO REFERENCE; MAKE YOUR CHANGES TO OPTIMIZE THIS CODE
 void optimized(double **A, double *x, double *y_opt, double *z_opt) {
-  int i, j, ii, jj;
-  for (i = 0; i < N; i += 16) {
-    for (j = 0; j < N; j += 16) {
-      for (ii = i; ii < i + 16; ii++) {
-        for (jj = j; jj < j + 16; jj++) {
+  int i, j, ii, jj, s = 2;
+  for (i = 0; i < N; i += s) {
+    for (j = 0; j < N; j += s) {
+      for (ii = i; ii < min(i + s, N); ii++) {
+        for (jj = j; jj < min(j + s, N); jj++) {
           y_opt[jj] = y_opt[jj] + A[ii][jj] * x[ii];
           z_opt[jj] = z_opt[jj] + A[ii][jj] * x[jj];
         }
