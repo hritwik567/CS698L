@@ -17,6 +17,7 @@ struct list_node_s {
   struct list_node_s *next;
 };
 
+void print_queue(int tid, struct list_node_s *queue_head);
 void print_usage(char *prog_name) {
   cerr << "usage: " << prog_name << " <producer count> <consumer count>\n";
   exit(EXIT_FAILURE);
@@ -42,7 +43,51 @@ void get_files(FILE *files[], int *file_count_p, int prod_count) {
 }
 
 void prod_cons(int prod_count, int cons_count, FILE *files[], int file_count) {
-   // SB: Write your OpenMP code here.
+  // SB: Write your OpenMP code here.
+  struct list_node_s *p_head = (struct list_node_s*) malloc(sizeof(list_node_s));
+  p_head->data = NULL;
+  p_head->next = NULL;
+  
+  struct list_node_s *c_head = p_head;
+  int done = 0;
+
+  #pragma omp parallel for num_threads(prod_count)
+  for(int i = 0; i < file_count; i++) {
+    char * line = NULL;
+    size_t len = 0;
+    size_t read;
+
+    while ((read = getline(&line, &len, files[i])) != -1) {
+      struct list_node_s *t_node = (struct list_node_s*) malloc(sizeof(list_node_s));
+      t_node->data = (char*) malloc(read * sizeof(char));
+      t_node->next = NULL;
+      strncpy(t_node->data, line, read);
+      #pragma omp critical
+      {
+        p_head->next = t_node;
+        p_head = p_head->next;
+      }
+    }
+
+    free(line);
+    #pragma omp critical
+    done += 1;
+  }
+
+  #pragma omp parallel num_threads(cons_count)
+  {
+    #pragma omp single
+    {
+      while(done != file_count) {
+        #pragma omp task
+        do_task(c_head);
+        #pragma omp critical
+        c_head = c_head
+      }
+    }
+  }
+  
+  print_queue(0, c_head);
 }
 
 void print_queue(int tid, struct list_node_s *queue_head) {
@@ -50,7 +95,8 @@ void print_queue(int tid, struct list_node_s *queue_head) {
   struct list_node_s *curr_p = queue_head;
 #pragma omp critical
   while (curr_p != NULL) {
-    cout << curr_p->data << "\n";
+    if(curr_p->data)
+      cout << curr_p->data << "\n";
     curr_p = curr_p->next;
   }
   cout << "\n";

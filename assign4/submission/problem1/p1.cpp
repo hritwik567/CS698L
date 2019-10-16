@@ -32,6 +32,7 @@ void omp_version(uint32_t **A) {
   int i, j, k;
   for (k = 0; k < ITER; k++) {
     for (i = 1; i < N; i++) {
+      #pragma omp parallel for
       for (j = 0; j < (N - 1); j++) {
         A[i][j + 1] = A[i - 1][j + 1] + A[i][j + 1];
       }
