@@ -42,6 +42,11 @@ void get_files(FILE *files[], int *file_count_p, int prod_count) {
   *file_count_p = i;
 }
 
+
+void do_task(struct list_node_s *node) {
+  cout << node->data << endl;
+}
+
 void prod_cons(int prod_count, int cons_count, FILE *files[], int file_count) {
   // SB: Write your OpenMP code here.
   struct list_node_s *p_head = (struct list_node_s*) malloc(sizeof(list_node_s));
@@ -78,16 +83,17 @@ void prod_cons(int prod_count, int cons_count, FILE *files[], int file_count) {
   {
     #pragma omp single
     {
-      while(done != file_count) {
+      while(done != file_count || c_head != NULL) {
         #pragma omp task
         do_task(c_head);
-        #pragma omp critical
-        c_head = c_head
+        while(done != file_count and c_head == NULL);
+        if(c_head != NULL)
+          #pragma omp critical
+          c_head = c_head->next;
       }
     }
   }
   
-  print_queue(0, c_head);
 }
 
 void print_queue(int tid, struct list_node_s *queue_head) {
