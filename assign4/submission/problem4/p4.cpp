@@ -43,57 +43,77 @@ void get_files(FILE *files[], int *file_count_p, int prod_count) {
 }
 
 
-void do_task(struct list_node_s *node) {
-  cout << node->data << endl;
+void do_tokenize(struct list_node_s *node) {
+  if(node->data) {
+    char delim[] = " ";
+
+	  char *ptr = strtok(node->data, delim);
+
+    while(ptr != NULL)
+    {
+      #pragma omp critical
+      cout << ptr << endl;
+      ptr = strtok(NULL, delim);
+    }
+  }
 }
 
 void prod_cons(int prod_count, int cons_count, FILE *files[], int file_count) {
   // SB: Write your OpenMP code here.
+  int total_threads = prod_count + cons_count;  
+
+  int f_read = 0;
+  int p_done = 0;
   struct list_node_s *p_head = (struct list_node_s*) malloc(sizeof(list_node_s));
   p_head->data = NULL;
   p_head->next = NULL;
   
+  int c_done = 0;
   struct list_node_s *c_head = p_head;
-  int done = 0;
+  struct list_node_s *t_head = p_head;
 
-  #pragma omp parallel for num_threads(prod_count)
-  for(int i = 0; i < file_count; i++) {
-    char * line = NULL;
-    size_t len = 0;
-    size_t read;
-
-    while ((read = getline(&line, &len, files[i])) != -1) {
-      struct list_node_s *t_node = (struct list_node_s*) malloc(sizeof(list_node_s));
-      t_node->data = (char*) malloc(read * sizeof(char));
-      t_node->next = NULL;
-      strncpy(t_node->data, line, read);
-      #pragma omp critical
-      {
-        p_head->next = t_node;
-        p_head = p_head->next;
-      }
-    }
-
-    free(line);
-    #pragma omp critical
-    done += 1;
-  }
-
-  #pragma omp parallel num_threads(cons_count)
+  #pragma omp parallel num_threads(total_threads)
   {
-    #pragma omp single
-    {
-      while(done != file_count || c_head != NULL) {
-        #pragma omp task
-        do_task(c_head);
-        while(done != file_count and c_head == NULL);
-        if(c_head != NULL)
-          #pragma omp critical
-          c_head = c_head->next;
+    int t_id = omp_get_thread_num();
+    if(t_id < file_count) {
+      char * line = NULL;
+      size_t len = 0;
+      size_t read;
+
+      while ((read = getline(&line, &len, files[t_id])) != -1) {
+        struct list_node_s *t_node = (struct list_node_s*) malloc(sizeof(list_node_s));
+        t_node->data = (char*) malloc((read - 1) * sizeof(char));
+        t_node->next = NULL;
+        strncpy(t_node->data, line, read - 1);
+        #pragma omp critical
+        {
+          p_head->next = t_node;
+          p_head = p_head->next;
+          p_done += 1;
+        }
+      }
+      #pragma omp critical
+      f_read += 1;
+      free(line);
+    } else {
+      struct list_node_s *l_head;
+      while(true) {
+        while(c_done == p_done and f_read != file_count);
+        #pragma omp critical
+        {
+          if(c_head->next != NULL) {
+            c_head = c_head->next;
+            c_done += 1;
+            l_head = c_head;
+          } else {
+            l_head = NULL;
+          }
+        }
+        if(l_head) do_tokenize(l_head);
+        else break;
       }
     }
   }
-  
 }
 
 void print_queue(int tid, struct list_node_s *queue_head) {
