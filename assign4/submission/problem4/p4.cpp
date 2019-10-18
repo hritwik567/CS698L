@@ -1,6 +1,3 @@
-// Compile:  g++ -fopenmp assignment4-p4.cpp -o assignment4-p4
-// Run: ./assignment4-p4 <producers> <consumers>
-
 #include <iostream>
 #include <omp.h>
 #include <stdlib.h>
