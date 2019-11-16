@@ -13,12 +13,24 @@
 
 using namespace std;
 
-__global__ void kernel1(double* A) {
+__global__ void kernel1(double** A) {
   // SB: Write the first kernel here
+  int j = threadIdx.x;
+  for (int k = 0; k < ITER; k++) {
+    for (int i = 1; i < SIZE1; i++) {
+      A[i][j + 1] = A[i - 1][j + 1] + A[i][j + 1];
+    }
+  }
 }
 
-__global__ void kernel2(double* A) {
+__global__ void kernel2(double** A) {
   // SB: Write the second kernel here
+  int j = threadIdx.x;
+  for (int k = 0; k < ITER; k++) {
+    for (int i = 1; i < SIZE1; i++) {
+      A[i][j + 1] = A[i - 1][j + 1] + A[i][j + 1];
+    }
+  }
 }
 
 __host__ void serial(double** A) {
@@ -98,7 +110,7 @@ int main() {
   clkend = rtclock();
   t = clkend - clkbegin;
   cout << "Serial code on CPU: " << (1.0 * SIZE1 * SIZE1 * ITER / t / 1.0e9)
-       << " GFLOPS; Time = " << t * 1000 << " msec\n";
+       << " GFLOPS; Time = " << t * 1000 << " msec" << endl;
 
   // cudaError_t status;
   cudaEvent_t start, end;
@@ -106,20 +118,22 @@ int main() {
   cudaEventCreate(&end);
   cudaEventRecord(start, 0);
   // SB: Write your first GPU kernel here
+  kernel1<<<1, SIZE1 - 1>>>(A_k1);
   cudaEventRecord(end, 0);
   float kernel_time;
   cudaEventElapsedTime(&kernel_time, start, end);
   check_result(A_ser, A_k1, SIZE1);
   cout << "Kernel 1 on GPU: " << (1.0 * SIZE1 * SIZE1 * ITER / t / 1.0e9)
-       << " GFLOPS; Time = " << kernel_time << " msec\n";
+       << " GFLOPS; Time = " << kernel_time << " msec" << endl;
 
   cudaEventRecord(start, 0);
   // SB: Write your second GPU kernel here
+  kernel2<<<1, SIZE2 - 1>>>(A_k2);
   cudaEventRecord(end, 0);
   cudaEventElapsedTime(&kernel_time, start, end);
   check_result(A_ser, A_k2, SIZE2);
   cout << "Kernel 2 on GPU: " << (1.0 * SIZE2 * SIZE2 * ITER / t / 1.0e9)
-       << " GFLOPS; Time = " << kernel_time << " msec\n";
+       << " GFLOPS; Time = " << kernel_time << " msec" << endl;
 
   return EXIT_SUCCESS;
 }
