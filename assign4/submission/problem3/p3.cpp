@@ -29,6 +29,28 @@ void oddEvenSort_ref(uint32_t* A, uint32_t N) {
 
 void OddEvenSort_omp(uint32_t* A, uint32_t N) {
   // SB: Write your OpenMP code here
+  uint32_t tmp;
+  for (int phase = 0; phase < N; phase++) {
+    if (phase % 2 == 0) {
+      #pragma omp parallel for private(tmp)
+      for (int i = 1; i < N; i += 2) {
+        if (A[i - 1] > A[i]) {
+          tmp = A[i];
+          A[i] = A[i - 1];
+          A[i - 1] = tmp;
+        }
+      }
+    } else {
+      #pragma omp parallel for private(tmp)
+      for (int i = 1; i < N - 1; i += 2) {
+        if (A[i] > A[i + 1]) {
+          tmp = A[i + 1];
+          A[i + 1] = A[i];
+          A[i] = tmp;
+        }
+      }
+    }
+  }
 }
 
 void check_result(uint32_t* w_ref, uint32_t* w_opt, uint32_t N) {
