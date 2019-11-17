@@ -124,41 +124,51 @@ int main() {
   cudaEvent_t start, end;
   gpuErrchk( cudaEventCreate(&start) );
   gpuErrchk( cudaEventCreate(&end) );
-  gpuErrchk( cudaEventRecord(start, 0) );
   // SB: Write your first GPU kernel here
   
   double* A_k1_c;
   gpuErrchk( cudaMalloc((void**)&A_k1_c, SIZE1*SIZE1*sizeof(double)) );
   gpuErrchk( cudaMemcpy(A_k1_c, A_k1, SIZE1*SIZE1*sizeof(double), cudaMemcpyHostToDevice) );
+
+  gpuErrchk( cudaEventRecord(start, 0) );
   kernel1<<<4, 1024>>>(A_k1_c);
   gpuErrchk( cudaPeekAtLastError() );
-  gpuErrchk( cudaDeviceSynchronize() );
-  gpuErrchk( cudaMemcpy(A_k1, A_k1_c, SIZE1*SIZE1*sizeof(double), cudaMemcpyDeviceToHost) );
-
   gpuErrchk( cudaEventRecord(end, 0) );
+
+  gpuErrchk( cudaMemcpy(A_k1, A_k1_c, SIZE1*SIZE1*sizeof(double), cudaMemcpyDeviceToHost) );
+  gpuErrchk( cudaDeviceSynchronize() );
+
   float kernel_time = 0;
   gpuErrchk( cudaEventElapsedTime(&kernel_time, start, end) );
   check_result(A_ser, A_k1, SIZE1);
   cout << "Kernel 1 on GPU: " << (1.0 * SIZE1 * SIZE1 * ITER / t / 1.0e9)
        << " GFLOPS; Time = " << kernel_time << " msec" << endl;
 
-  gpuErrchk( cudaEventRecord(start, 0) );
   // SB: Write your second GPU kernel here
   
   double* A_k2_c;
   gpuErrchk( cudaMalloc((void**)&A_k2_c, SIZE2*SIZE2*sizeof(double)) );
   gpuErrchk( cudaMemcpy(A_k2_c, A_k2, SIZE2*SIZE2*sizeof(double), cudaMemcpyHostToDevice) );
-  kernel2<<<5, 1024>>>(A_k2_c);
+  
+  gpuErrchk( cudaEventRecord(start, 0) );
+  kernel2<<<4, 1024>>>(A_k2_c);
   gpuErrchk( cudaPeekAtLastError() );
-  gpuErrchk( cudaDeviceSynchronize() );
-  gpuErrchk( cudaMemcpy(A_k2, A_k2_c, SIZE2*SIZE2*sizeof(double), cudaMemcpyDeviceToHost) );
-
   gpuErrchk( cudaEventRecord(end, 0) );
+
+  gpuErrchk( cudaMemcpy(A_k2, A_k2_c, SIZE2*SIZE2*sizeof(double), cudaMemcpyDeviceToHost) );
+  gpuErrchk( cudaDeviceSynchronize() );
+
   kernel_time = 0;
   gpuErrchk( cudaEventElapsedTime(&kernel_time, start, end) );
   // check_result(A_ser, A_k2, SIZE1);
   cout << "Kernel 2 on GPU: " << (1.0 * SIZE2 * SIZE2 * ITER / t / 1.0e9)
        << " GFLOPS; Time = " << kernel_time << " msec" << endl;
 
+  gpuErrchk( cudaFree(A_k1_c) );
+  gpuErrchk( cudaFree(A_k2_c) );
+  
+  free(A_ser);
+  free(A_k1);
+  free(A_k2);
   return EXIT_SUCCESS;
 }

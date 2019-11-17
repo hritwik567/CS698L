@@ -44,7 +44,7 @@ __host__ void check_result(double* Test, double* Ref) {
   int numdiffs = 0;
 
   for (int i = 0; i < SIZE; i++) {
-    for (int j = 0; i < SIZE; j++) {
+    for (int j = 0; j < SIZE; j++) {
       rel_diff = (Test[i*SIZE + j] - Ref[i*SIZE + j]);
       if (fabs(rel_diff) > THRESHOLD) {
         numdiffs++;
@@ -65,7 +65,7 @@ __global__ void ATAkernel(double* M, double* P) {
 
   int i =  blockIdx.x*blockDim.x + threadIdx.x;
   int j =  blockIdx.y*blockDim.y + threadIdx.y;
-
+  
   if(i < SIZE and j < SIZE) {
     for (int k = 0; k < SIZE; k++)
       P[i*SIZE + j] += M[k*SIZE + i] * M[k*SIZE + j];
@@ -103,20 +103,25 @@ int main() {
 
   gpuErrchk( cudaEventCreate(&start) );
   gpuErrchk( cudaEventCreate(&end) );
-  gpuErrchk( cudaEventRecord(start, 0) );
   
   // SB: Write your GPU kernel here
-  double* O_p_c;
+  double *O_p_c, *A_c;
   gpuErrchk( cudaMalloc((void**)&O_p_c, SIZE*SIZE*sizeof(double)) );
+  gpuErrchk( cudaMalloc((void**)&A_c, SIZE*SIZE*sizeof(double)) );
   gpuErrchk( cudaMemcpy(O_p_c, O_p, SIZE*SIZE*sizeof(double), cudaMemcpyHostToDevice) );
+  gpuErrchk( cudaMemcpy(A_c, A, SIZE*SIZE*sizeof(double), cudaMemcpyHostToDevice) );
   dim3 blockSize(BLOCK_SIZE, BLOCK_SIZE);
   dim3 gridSize((SIZE + blockSize.x - 1)/blockSize.x, (SIZE + blockSize.y - 1)/blockSize.y);
-  ATAkernel<<<gridSize, blockSize>>>(A, O_p_c);
+  
+  gpuErrchk( cudaEventRecord(start, 0) );
+  ATAkernel<<<gridSize, blockSize>>>(A_c, O_p_c);
   gpuErrchk( cudaPeekAtLastError() );
-  gpuErrchk( cudaDeviceSynchronize() );
-  gpuErrchk( cudaMemcpy(O_p, O_p_c, SIZE*SIZE*sizeof(double), cudaMemcpyDeviceToHost) );
-
   gpuErrchk( cudaEventRecord(end, 0) );
+
+  gpuErrchk( cudaMemcpy(O_p, O_p_c, SIZE*SIZE*sizeof(double), cudaMemcpyDeviceToHost) );
+  
+  gpuErrchk( cudaDeviceSynchronize() );
+
   float kernel_time = 0;
   gpuErrchk( cudaEventElapsedTime(&kernel_time, start, end) );
 
@@ -124,6 +129,13 @@ int main() {
        << " GFLOPS; Time = " << kernel_time << " msec\n";
 
   check_result(O_p, O_s);
+
+  gpuErrchk( cudaFree(O_p_c) );
+  gpuErrchk( cudaFree(A_c) );
+  
+  free(O_s);
+  free(O_p);
+  free(A);
 
   return EXIT_SUCCESS;
 }

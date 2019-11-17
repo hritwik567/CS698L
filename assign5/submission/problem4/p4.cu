@@ -5,21 +5,44 @@
 #include <iostream>
 
 const uint64_t N = (1 << 10);
+const uint64_t BLOCK_SIZE = (1 << 4);
 
 using namespace std;
 
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true) {
+   if (code != cudaSuccess) {
+      fprintf(stderr, "GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+   }
+}
+
 __global__ void kernel1(uint64_t* A, uint64_t* B, uint64_t* C) {
   // SB: Write your code here
+  int i =  blockIdx.x*blockDim.x + threadIdx.x;
+  int j =  blockIdx.y*blockDim.y + threadIdx.y;
+  uint64_t sum = 0;
+  for (uint64_t k = 0; k < N; k++) {
+    sum += A[i * N + k] * B[k * N + j];
+  }
+  C[i * N + j] = sum;
 }
 
 __global__ void kernel2(uint64_t* A, uint64_t* B, uint64_t* C) {
   // SB: Write your code here
+  int i =  blockIdx.x*blockDim.x + threadIdx.x;
+  int j =  blockIdx.y*blockDim.y + threadIdx.y;
+  uint64_t sum = 0;
+  for (uint64_t k = 0; k < N; k++) {
+    sum += A[i * N + k] * B[k * N + j];
+  }
+  C[i * N + j] = sum;
 }
 
 __host__ void cpumatMul(uint64_t* A, uint64_t* B, uint64_t* C) {
   for (uint64_t i = 0; i < N; i++) {
     for (uint64_t j = 0; j < N; j++) {
-      float sum = 0.0;
+      uint64_t sum = 0;
       for (uint64_t k = 0; k < N; k++) {
         sum += A[i * N + k] * B[k * N + j];
       }
@@ -42,11 +65,10 @@ __host__ void check_result(uint64_t* w_ref, uint64_t* w_opt) {
 
 int main() {
   int SIZE = N * N;
-  cudaError_t status;
   cudaEvent_t start, end;
 
-  cudaEventCreate(&start);
-  cudaEventCreate(&end);
+  gpuErrchk( cudaEventCreate(&start) );
+  gpuErrchk( cudaEventCreate(&end) );
 
   uint64_t *h_A, *h_B, *h_C1, *h_C2, *cpuResult;
 
@@ -69,53 +91,44 @@ int main() {
   cpumatMul(h_A, h_B, cpuResult);
 
   uint64_t *d_A, *d_B, *d_C1, *d_C2;
-  status = cudaMalloc((void**)&d_A, SIZE * sizeof(uint64_t));
-  if (status != cudaSuccess) {
-    cerr << cudaGetErrorString(status) << endl;
-  }
-  status = cudaMalloc((void**)&d_B, SIZE * sizeof(uint64_t));
-  if (status != cudaSuccess) {
-    cerr << cudaGetErrorString(status) << endl;
-  }
-  status = cudaMalloc((void**)&d_C1, SIZE * sizeof(uint64_t));
-  if (status != cudaSuccess) {
-    cerr << cudaGetErrorString(status) << endl;
-  }
-  status = cudaMalloc((void**)&d_C2, SIZE * sizeof(uint64_t));
-  if (status != cudaSuccess) {
-    cerr << cudaGetErrorString(status) << endl;
-  }
+  gpuErrchk( cudaMalloc((void**)&d_A, SIZE * sizeof(uint64_t)) );
+  gpuErrchk( cudaMalloc((void**)&d_B, SIZE * sizeof(uint64_t)) );
+  gpuErrchk( cudaMalloc((void**)&d_C1, SIZE * sizeof(uint64_t)) );
+  gpuErrchk( cudaMalloc((void**)&d_C2, SIZE * sizeof(uint64_t)) );
 
-  status = cudaMemcpy(d_A, h_A, SIZE * sizeof(uint64_t), cudaMemcpyHostToDevice);
-  if (status != cudaSuccess) {
-    cerr << cudaGetErrorString(status) << endl;
-  }
-  status = cudaMemcpy(d_B, h_B, SIZE * sizeof(uint64_t), cudaMemcpyHostToDevice);
-  if (status != cudaSuccess) {
-    cerr << cudaGetErrorString(status) << endl;
-  }
+  gpuErrchk( cudaMemcpy(d_A, h_A, SIZE * sizeof(uint64_t), cudaMemcpyHostToDevice) );
+  gpuErrchk( cudaMemcpy(d_B, h_B, SIZE * sizeof(uint64_t), cudaMemcpyHostToDevice) );
 
-  dim3 blocksPerGrid(1);
-  dim3 threadsPerBlock(1);
-  cudaEventRecord(start, 0);
+  dim3 threadsPerBlock(BLOCK_SIZE, BLOCK_SIZE);
+  dim3 blocksPerGrid((N + threadsPerBlock.x - 1)/threadsPerBlock.x, (N + threadsPerBlock.y - 1)/threadsPerBlock.y);
+
+  gpuErrchk( cudaEventRecord(start, 0) );
   kernel1<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C1);
-  cudaEventRecord(end, 0);
-  float kernel_time;
-  cudaEventElapsedTime(&kernel_time, start, end);
+  gpuErrchk( cudaPeekAtLastError() );
+  gpuErrchk( cudaEventRecord(end, 0) );
+  
+  gpuErrchk( cudaDeviceSynchronize() );
+  float kernel_time = 0;
+  gpuErrchk( cudaEventElapsedTime(&kernel_time, start, end) );
   std::cout << "Kernel 1 time (ms): " << kernel_time << "\n";
-  cudaMemcpy(h_C1, d_C1, SIZE * sizeof(uint64_t), cudaMemcpyDeviceToHost);
 
-  cudaEventRecord(start, 0);
+  gpuErrchk( cudaMemcpy(h_C1, d_C1, SIZE * sizeof(uint64_t), cudaMemcpyDeviceToHost) );
+
+  gpuErrchk( cudaEventRecord(start, 0) );
   kernel2<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C2);
-  cudaEventRecord(end, 0);
-  cudaEventElapsedTime(&kernel_time, start, end);
-  std::cout << "Kernel 2 time (ms): " << kernel_time << "\n";
-  cudaMemcpy(h_C2, d_C2, SIZE * sizeof(uint64_t), cudaMemcpyDeviceToHost);
+  gpuErrchk( cudaPeekAtLastError() );
+  gpuErrchk( cudaEventRecord(end, 0) );
 
-  cudaFree(d_A);
-  cudaFree(d_B);
-  cudaFree(d_C1);
-  cudaFree(d_C2);
+  gpuErrchk( cudaDeviceSynchronize() );
+  gpuErrchk( cudaEventElapsedTime(&kernel_time, start, end) );
+  std::cout << "Kernel 2 time (ms): " << kernel_time << "\n";
+
+  gpuErrchk( cudaMemcpy(h_C2, d_C2, SIZE * sizeof(uint64_t), cudaMemcpyDeviceToHost) );
+
+  gpuErrchk( cudaFree(d_A) );
+  gpuErrchk( cudaFree(d_B) );
+  gpuErrchk( cudaFree(d_C1) );
+  gpuErrchk( cudaFree(d_C2) );
 
   free(h_A);
   free(h_B);
