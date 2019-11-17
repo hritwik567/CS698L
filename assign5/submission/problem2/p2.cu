@@ -24,7 +24,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 
 __global__ void kernel1(double* A) {
   // SB: Write the first kernel here
-  int j =  blockIdx.x*blockDim.x + threadIdx.x;;
+  int j =  blockIdx.x*blockDim.x + threadIdx.x;
   if(j < SIZE1 - 1) {
     for (int k = 0; k < ITER; k++) {
       for (int i = 1; i < SIZE1; i++) {
@@ -36,7 +36,7 @@ __global__ void kernel1(double* A) {
 
 __global__ void kernel2(double* A) {
   // SB: Write the second kernel here
-  int j =  blockIdx.x*blockDim.x + threadIdx.x;;
+  int j =  blockIdx.x*blockDim.x + threadIdx.x;
   if(j < SIZE2 - 1) {
     for (int k = 0; k < ITER; k++) {
       for (int i = 1; i < SIZE2; i++) {
