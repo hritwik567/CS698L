@@ -5,7 +5,7 @@
 #include <iostream>
 #include <sys/time.h>
 
-#define SIZE 4096
+#define SIZE 128
 #define BLOCK_SIZE 16
 #define THRESHOLD (0.000001)
 
@@ -63,8 +63,8 @@ __host__ void check_result(double* Test, double* Ref) {
 // SB: Implement your kernel here
 __global__ void ATAkernel(double* M, double* P) {
 
-  int i =  blockIdx.x*blockDim.x + threadIdx.x;
-  int j =  blockIdx.y*blockDim.y + threadIdx.y;
+  int i =  blockIdx.y*blockDim.y + threadIdx.y;
+  int j =  blockIdx.x*blockDim.x + threadIdx.x;
   
   if(i < SIZE and j < SIZE) {
     for (int k = 0; k < SIZE; k++)
