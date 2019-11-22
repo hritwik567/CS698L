@@ -5,7 +5,7 @@
 #include <iostream>
 #include <sys/time.h>
 
-#define SIZE 512
+#define SIZE 1024
 #define BLOCK_SIZE 16
 #define THRESHOLD (0.000001)
 
@@ -47,6 +47,7 @@ __host__ void check_result(double* Test, double* Ref) {
     for (int j = 0; j < SIZE; j++) {
       rel_diff = (Test[i*SIZE + j] - Ref[i*SIZE + j]);
       if (fabs(rel_diff) > THRESHOLD) {
+        printf("%f %f %f\n",Test[i*SIZE + j], Ref[i*SIZE + j], rel_diff);
         numdiffs++;
         if (rel_diff > maxdiff)
           maxdiff = rel_diff;
@@ -69,46 +70,37 @@ __global__ void ATAkernel(double* M, double* P) {
   uint64_t i = blockIdx.y*blockDim.y + threadIdx.y;
   uint64_t j = blockIdx.x*blockDim.x + threadIdx.x;
 
-  __shared__ double AT_t[BLOCK_SIZE][BLOCK_SIZE];
   __shared__ double A_t[BLOCK_SIZE][BLOCK_SIZE];
+  __shared__ double B_t[BLOCK_SIZE][BLOCK_SIZE];
 
   for (uint64_t tid = 0; tid < SIZE/blockDim.x; tid++) {
-    AT_t[threadIdx.y][threadIdx.x] = M[(tid * blockDim.x + threadIdx.x) * SIZE + i];
-    A_t[threadIdx.y][threadIdx.x] = M[(tid * blockDim.y + threadIdx.y) * SIZE + j];
+    A_t[threadIdx.y][threadIdx.x] = M[(tid * blockDim.x + threadIdx.x) * SIZE + i];
+    B_t[threadIdx.y][threadIdx.x] = M[(tid * blockDim.y + threadIdx.y) * SIZE + j];
    
     __syncthreads();
 
-    sum += AT_t[threadIdx.y][0] * A_t[0][threadIdx.x]
-          + AT_t[threadIdx.y][1] * A_t[1][threadIdx.x]
-          + AT_t[threadIdx.y][2] * A_t[2][threadIdx.x]
-          + AT_t[threadIdx.y][3] * A_t[3][threadIdx.x]
-          + AT_t[threadIdx.y][4] * A_t[4][threadIdx.x]
-          + AT_t[threadIdx.y][5] * A_t[5][threadIdx.x]
-          + AT_t[threadIdx.y][6] * A_t[6][threadIdx.x]
-          + AT_t[threadIdx.y][7] * A_t[7][threadIdx.x]
-          + AT_t[threadIdx.y][8] * A_t[8][threadIdx.x]
-          + AT_t[threadIdx.y][9] * A_t[9][threadIdx.x]
-          + AT_t[threadIdx.y][10] * A_t[10][threadIdx.x]
-          + AT_t[threadIdx.y][11] * A_t[11][threadIdx.x]
-          + AT_t[threadIdx.y][12] * A_t[12][threadIdx.x]
-          + AT_t[threadIdx.y][13] * A_t[13][threadIdx.x]
-          + AT_t[threadIdx.y][14] * A_t[14][threadIdx.x]
-          + AT_t[threadIdx.y][15] * A_t[15][threadIdx.x];
+    sum += A_t[threadIdx.y][0] * B_t[0][threadIdx.x]
+          + A_t[threadIdx.y][1] * B_t[1][threadIdx.x]
+          + A_t[threadIdx.y][2] * B_t[2][threadIdx.x]
+          + A_t[threadIdx.y][3] * B_t[3][threadIdx.x]
+          + A_t[threadIdx.y][4] * B_t[4][threadIdx.x]
+          + A_t[threadIdx.y][5] * B_t[5][threadIdx.x]
+          + A_t[threadIdx.y][6] * B_t[6][threadIdx.x]
+          + A_t[threadIdx.y][7] * B_t[7][threadIdx.x]
+          + A_t[threadIdx.y][8] * B_t[8][threadIdx.x]
+          + A_t[threadIdx.y][9] * B_t[9][threadIdx.x]
+          + A_t[threadIdx.y][10] * B_t[10][threadIdx.x]
+          + A_t[threadIdx.y][11] * B_t[11][threadIdx.x]
+          + A_t[threadIdx.y][12] * B_t[12][threadIdx.x]
+          + A_t[threadIdx.y][13] * B_t[13][threadIdx.x]
+          + A_t[threadIdx.y][14] * B_t[14][threadIdx.x]
+          + A_t[threadIdx.y][15] * B_t[15][threadIdx.x];
 
     __syncthreads();
   }
   
   P[i * SIZE + j] = sum;
-
-}
-
-__global__ void gpu_matrix_transpose(double* P) {
-  if(blockIdx.x >= blockIdx.y) return;
-
-  uint64_t i = blockIdx.y*blockDim.y + threadIdx.y;
-  uint64_t j = blockIdx.x*blockDim.x + threadIdx.x;
-
-  P[i * SIZE + j] = P[j * SIZE + i];
+  if(blockIdx.x > blockIdx.y) P[j * SIZE + i] = sum;
 }
 
 int main() {
@@ -122,7 +114,8 @@ int main() {
 
   for (int i = 0; i < SIZE; i++) {
     for (int j = 0; j < SIZE; j++) {
-      A[i*SIZE + j] = i * j * 0.25;
+      // A[i*SIZE + j] = random() * 0.25;
+      A[i*SIZE + j] = i * (j-i) * 0.25;
       O_s[i*SIZE + j] = 0;
       O_p[i*SIZE + j] = 0;
     }
@@ -154,7 +147,6 @@ int main() {
   gpuErrchk( cudaMemcpy(O_p_c, O_p, SIZE*SIZE*sizeof(double), cudaMemcpyHostToDevice) );
   gpuErrchk( cudaMemcpy(A_c, A, SIZE*SIZE*sizeof(double), cudaMemcpyHostToDevice) );
   ATAkernel<<<gridSize, blockSize>>>(A_c, O_p_c);
-  gpu_matrix_transpose<<<gridSize, blockSize>>>(O_p_c);
   gpuErrchk( cudaPeekAtLastError() );
   gpuErrchk( cudaMemcpy(O_p, O_p_c, SIZE*SIZE*sizeof(double), cudaMemcpyDeviceToHost) );
   gpuErrchk( cudaEventRecord(end, 0) );

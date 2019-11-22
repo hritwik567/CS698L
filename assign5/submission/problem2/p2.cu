@@ -8,7 +8,7 @@
 #define THRESHOLD (0.000001)
 
 #define SIZE1 4096
-#define SIZE2 4098
+#define SIZE2 4097
 #define ITER 100
 #define BLOCK_SIZE 16
 
