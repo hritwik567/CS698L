@@ -128,14 +128,14 @@ int main() {
   
   double* A_k1_c;
   gpuErrchk( cudaMalloc((void**)&A_k1_c, SIZE1*SIZE1*sizeof(double)) );
-  gpuErrchk( cudaMemcpy(A_k1_c, A_k1, SIZE1*SIZE1*sizeof(double), cudaMemcpyHostToDevice) );
 
   gpuErrchk( cudaEventRecord(start, 0) );
+  gpuErrchk( cudaMemcpy(A_k1_c, A_k1, SIZE1*SIZE1*sizeof(double), cudaMemcpyHostToDevice) );
   kernel1<<<4, 1024>>>(A_k1_c);
   gpuErrchk( cudaPeekAtLastError() );
+  gpuErrchk( cudaMemcpy(A_k1, A_k1_c, SIZE1*SIZE1*sizeof(double), cudaMemcpyDeviceToHost) );
   gpuErrchk( cudaEventRecord(end, 0) );
 
-  gpuErrchk( cudaMemcpy(A_k1, A_k1_c, SIZE1*SIZE1*sizeof(double), cudaMemcpyDeviceToHost) );
   gpuErrchk( cudaDeviceSynchronize() );
 
   float kernel_time = 0;
@@ -148,14 +148,14 @@ int main() {
   
   double* A_k2_c;
   gpuErrchk( cudaMalloc((void**)&A_k2_c, SIZE2*SIZE2*sizeof(double)) );
-  gpuErrchk( cudaMemcpy(A_k2_c, A_k2, SIZE2*SIZE2*sizeof(double), cudaMemcpyHostToDevice) );
   
   gpuErrchk( cudaEventRecord(start, 0) );
+  gpuErrchk( cudaMemcpy(A_k2_c, A_k2, SIZE2*SIZE2*sizeof(double), cudaMemcpyHostToDevice) );
   kernel2<<<4, 1024>>>(A_k2_c);
   gpuErrchk( cudaPeekAtLastError() );
+  gpuErrchk( cudaMemcpy(A_k2, A_k2_c, SIZE2*SIZE2*sizeof(double), cudaMemcpyDeviceToHost) );
   gpuErrchk( cudaEventRecord(end, 0) );
 
-  gpuErrchk( cudaMemcpy(A_k2, A_k2_c, SIZE2*SIZE2*sizeof(double), cudaMemcpyDeviceToHost) );
   gpuErrchk( cudaDeviceSynchronize() );
 
   kernel_time = 0;
