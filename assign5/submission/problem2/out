@@ -1,4 +1,0 @@
-Serial code on CPU: 0.27092 GFLOPS; Time = 6192.69 msec
-No differences found between base and test versions
-Kernel 1 on GPU: 0.27092 GFLOPS; Time = 157.844 msec
-Kernel 2 on GPU: 0.271052 GFLOPS; Time = 156.913 msec
