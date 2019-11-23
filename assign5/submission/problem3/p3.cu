@@ -6,7 +6,7 @@
 #include <sys/time.h>
 
 #define SIZE 1024
-#define BLOCK_SIZE 16
+#define BLOCK_SIZE 32
 #define THRESHOLD (0.000001)
 
 using namespace std;
@@ -31,9 +31,9 @@ double rtclock() {
 }
 
 __host__ void ATAonCPU(double* M, double* P) {
-  for (int k = 0; k < SIZE; k++) {
     for (int i = 0; i < SIZE; i++) {
-      for (int j = 0; j < SIZE; j++)
+      for (int j = 0; j < SIZE; j++) {
+        for (int k = 0; k < SIZE; k++)
         P[i*SIZE + j] += M[k*SIZE + i] * M[k*SIZE + j];
     }
   }
@@ -47,8 +47,6 @@ __host__ void check_result(double* Test, double* Ref) {
     for (int j = 0; j < SIZE; j++) {
       rel_diff = (Test[i*SIZE + j] - Ref[i*SIZE + j]);
       if (fabs(rel_diff) > THRESHOLD) {
-        // if(i <j)printf("i: %d j: %d\n", i, j);
-        // printf("%f %f %f\n",Test[i*SIZE + j], Ref[i*SIZE + j], rel_diff);
         numdiffs++;
         if (rel_diff > maxdiff)
           maxdiff = rel_diff;
@@ -65,59 +63,59 @@ __host__ void check_result(double* Test, double* Ref) {
 // SB: Implement your kernel here
 __global__ void ATAkernel(double* M, double* P) {
 
+  if(blockIdx.x < blockIdx.y) return;
+  double sum = 0;
+
   uint64_t i = blockIdx.y*blockDim.y + threadIdx.y;
   uint64_t j = blockIdx.x*blockDim.x + threadIdx.x;
 
-  if(i < SIZE and j < SIZE) {
-  for (uint64_t k = 0; k < SIZE; k++) {
-    P[i*SIZE + j] += M[k*SIZE + i] * M[k*SIZE + j];
-  }
-}
+  __shared__ double A_t[BLOCK_SIZE][BLOCK_SIZE];
+  __shared__ double B_t[BLOCK_SIZE][BLOCK_SIZE];
 
-
-
-
-  // if(blockIdx.x < blockIdx.y) return;
-//   double sum = 0;
-
-//   uint64_t i = blockIdx.y*blockDim.y + threadIdx.y;
-//   uint64_t j = blockIdx.x*blockDim.x + threadIdx.x;
-
-//   __shared__ double A_t[BLOCK_SIZE][BLOCK_SIZE];
-//   __shared__ double B_t[BLOCK_SIZE][BLOCK_SIZE];
-
-//   for (uint64_t tid = 0; tid < SIZE/blockDim.x; tid++) {
-//     A_t[threadIdx.y][threadIdx.x] = M[(tid * blockDim.x + threadIdx.x) * SIZE + i];
-//     B_t[threadIdx.y][threadIdx.x] = M[(tid * blockDim.y + threadIdx.y) * SIZE + j];
+  for (uint64_t tid = 0; tid < SIZE/blockDim.x; tid++) {
+    A_t[threadIdx.y][threadIdx.x] = M[(tid * blockDim.x + threadIdx.x) * SIZE + i];
+    B_t[threadIdx.y][threadIdx.x] = M[(tid * blockDim.y + threadIdx.y) * SIZE + j];
    
-//     __syncthreads();
+    __syncthreads();
 
-//  for (uint64_t k = 0; k < blockDim.x; k++) {
-//        sum += A_t[threadIdx.y][k] * B_t[k][threadIdx.x];
-//      }
+    sum += A_t[threadIdx.y][0] * B_t[0][threadIdx.x]
+          + A_t[threadIdx.y][1] * B_t[1][threadIdx.x]
+          + A_t[threadIdx.y][2] * B_t[2][threadIdx.x]
+          + A_t[threadIdx.y][3] * B_t[3][threadIdx.x]
+          + A_t[threadIdx.y][4] * B_t[4][threadIdx.x]
+          + A_t[threadIdx.y][5] * B_t[5][threadIdx.x]
+          + A_t[threadIdx.y][6] * B_t[6][threadIdx.x]
+          + A_t[threadIdx.y][7] * B_t[7][threadIdx.x]
+          + A_t[threadIdx.y][8] * B_t[8][threadIdx.x]
+          + A_t[threadIdx.y][9] * B_t[9][threadIdx.x]
+          + A_t[threadIdx.y][10] * B_t[10][threadIdx.x]
+          + A_t[threadIdx.y][11] * B_t[11][threadIdx.x]
+          + A_t[threadIdx.y][12] * B_t[12][threadIdx.x]
+          + A_t[threadIdx.y][13] * B_t[13][threadIdx.x]
+          + A_t[threadIdx.y][14] * B_t[14][threadIdx.x]
+          + A_t[threadIdx.y][15] * B_t[15][threadIdx.x]
+          + A_t[threadIdx.y][16] * B_t[16][threadIdx.x]
+          + A_t[threadIdx.y][17] * B_t[17][threadIdx.x]
+          + A_t[threadIdx.y][18] * B_t[18][threadIdx.x]
+          + A_t[threadIdx.y][19] * B_t[19][threadIdx.x]
+          + A_t[threadIdx.y][20] * B_t[20][threadIdx.x]
+          + A_t[threadIdx.y][21] * B_t[21][threadIdx.x]
+          + A_t[threadIdx.y][22] * B_t[22][threadIdx.x]
+          + A_t[threadIdx.y][23] * B_t[23][threadIdx.x]
+          + A_t[threadIdx.y][24] * B_t[24][threadIdx.x]
+          + A_t[threadIdx.y][25] * B_t[25][threadIdx.x]
+          + A_t[threadIdx.y][26] * B_t[26][threadIdx.x]
+          + A_t[threadIdx.y][27] * B_t[27][threadIdx.x]
+          + A_t[threadIdx.y][28] * B_t[28][threadIdx.x]
+          + A_t[threadIdx.y][29] * B_t[29][threadIdx.x]
+          + A_t[threadIdx.y][30] * B_t[30][threadIdx.x]
+          + A_t[threadIdx.y][31] * B_t[31][threadIdx.x];
 
-// //    sum += A_t[threadIdx.y][0] * B_t[0][threadIdx.x]
-//           // + A_t[threadIdx.y][1] * B_t[1][threadIdx.x]
-//           // + A_t[threadIdx.y][2] * B_t[2][threadIdx.x]
-//           // + A_t[threadIdx.y][3] * B_t[3][threadIdx.x]
-//           // + A_t[threadIdx.y][4] * B_t[4][threadIdx.x]
-//           // + A_t[threadIdx.y][5] * B_t[5][threadIdx.x]
-//           // + A_t[threadIdx.y][6] * B_t[6][threadIdx.x]
-//           // + A_t[threadIdx.y][7] * B_t[7][threadIdx.x]
-//           // + A_t[threadIdx.y][8] * B_t[8][threadIdx.x]
-//           // + A_t[threadIdx.y][9] * B_t[9][threadIdx.x]
-//           // + A_t[threadIdx.y][10] * B_t[10][threadIdx.x]
-//           // + A_t[threadIdx.y][11] * B_t[11][threadIdx.x]
-//           // + A_t[threadIdx.y][12] * B_t[12][threadIdx.x]
-//           // + A_t[threadIdx.y][13] * B_t[13][threadIdx.x]
-//           // + A_t[threadIdx.y][14] * B_t[14][threadIdx.x]
-//           // + A_t[threadIdx.y][15] * B_t[15][threadIdx.x];
-
-//     __syncthreads();
-//   }
+    __syncthreads();
+  }
   
-//   P[i * SIZE + j] = sum;
-//   // if(blockIdx.x > blockIdx.y) P[j * SIZE + i] = sum;
+  P[i * SIZE + j] = sum;
+  if(blockIdx.x > blockIdx.y) P[j * SIZE + i] = sum;
 }
 
 int main() {
@@ -131,8 +129,8 @@ int main() {
 
   for (int i = 0; i < SIZE; i++) {
     for (int j = 0; j < SIZE; j++) {
-      A[i*SIZE + j] = random() * 0.25;
-      // A[i*SIZE + j] = i * (j*3.414-i*i) * 0.25;
+      // A[i*SIZE + j] = random() * 0.25;
+      A[i*SIZE + j] = i * j * 0.25;
       O_s[i*SIZE + j] = 0;
       O_p[i*SIZE + j] = 0;
     }
